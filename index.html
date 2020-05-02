@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+  <style>
+    .syntax-error{
+      border-right: 1rem solid red;
+    }
+    .syntax-ok{
+      border-right: 1rem solid green;
+    }
+  </style>
+  
+  
+  <title>Bradypus factory</title>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1>Bradypus factory
+      <br>
+      <small>Easily create a Bradypus application from cfg files</small></h1>
+    
+    <div id="content"></div>
+    <button type="button" id="send" class="d-none btn btn-block btn-primary my-5">Send</button>
+    <div id="response" class="my-5"></div>
+    
+  </div>
+  
+
+  
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.0.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
+  <script src="./defaults.js"></script>
+  
+  <script>
+    
+    const section_templ = (file, content, cssClass) => `
+    <section class="my-5 p-5 bg-light" id="container_${file}">
+      <h2>${file}.json</h2>
+        <pre class="bg-dark text-white p-3 validate-json ${cssClass}" contenteditable id="${file}">${content ? JSON.stringify(content, null, 2) : ''}</pre>
+      </div>
+    </section>`;
+    
+    
+    
+    $('#content').append(section_templ('app_data', defaults.app_data));
+    $('#content').append(section_templ('tables', defaults.tables));
+    
+    
+    const validateAndRun = (el) => {
+      try {
+        const json = JSON.parse($(el).text());
+        $(el).addClass('syntax-ok').removeClass('syntax-error');
+        
+        if($(el).attr('id') === 'tables') {
+          onTablesEntered(json);
+        }
+      } catch (error) {
+        $(el).addClass('syntax-error').removeClass('syntax-ok');
+      }
+    }
+    
+    const onTablesEntered = json => {
+      if (! json.tables){
+        $('#send').addClass('d-none');
+        return false;
+      }
+      let available_data_tables = [];
+      json.tables.forEach(tb => {
+        const n = tb.name.replace(/[a-z]+__/, '');
+        available_data_tables.push(n);
+        if (n !== 'files' && $(`#${n}`).length < 1){
+          $('#content').append(section_templ(n, defaults[n], 'data-table'));
+        }
+      });
+      $('.data-table').each(function(index, el){
+        const id = $(el).attr('id');
+        if (available_data_tables.indexOf(id) < 0) {
+          $(`#container_${id}`).remove();
+          return;
+        }
+        validateAndRun(el);
+      });
+
+      $('#send').removeClass('d-none');
+    }
+
+    $('#content').on('input', '.validate-json', function(){
+      validateAndRun(this);
+    });
+    $('.validate-json').each(function(index, el){
+      validateAndRun(el);
+    });
+
+
+    $('#send').on('click', (event)=>{
+      let final_json = {};
+      $('.validate-json').each((i, e) => {
+        const file = $(e).attr('id');
+        final_json[file] = JSON.parse($(e).text());        
+      });
+
+      $('#response').html('Please wait...');
+
+      $.ajax({
+        type: 'POST',
+        url: 'process.php',
+        data: JSON.stringify (final_json),
+        contentType: "application/json",
+        dataType: 'json',
+        success: (data) => { 
+          let html = `<div><strong>Status</strong><br>${data.status}</div>`;
+          html += data.validation ? `<div><strong>Validation</strong><br>${data.validation}</div>` : '';
+          html += data.zip ? `<div><strong>Download</strong><br><a href="${data.zip}">${data.zip}</a></div>` : '';
+          html += data.msg ? `<div><strong>Message</strong><br>${data.msg}</div>` : '';
+          $('#response').html(html);
+        }
+
+      });
+    })
+
+  </script>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-10461068-47"></script>
+<script>
+  if (window.location.host.indexOf('bradypus.net') > -1){
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-10461068-47');
+  }
+</script>
+
+</body>
+</html>

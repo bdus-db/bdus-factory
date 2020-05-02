@@ -1,0 +1,3 @@
+[submodule "bdus-cli"]
+	path = bdus-cli
+	url = https://github.com/jbogdani/bdus-cli
