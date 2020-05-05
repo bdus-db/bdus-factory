@@ -6,6 +6,9 @@ require_once 'bdus-cli/libs/Create.php';
 
 function deleteOldZips()
 {
+    if (!file_exists('tmp')){
+        return;
+    }
     $fileSystemIterator = new FilesystemIterator('tmp');
     $now = time();
     foreach ($fileSystemIterator as $file) {
