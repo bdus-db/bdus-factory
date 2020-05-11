@@ -138,6 +138,8 @@ try {
 } catch (Throwable $t) {
     $resp["status"] = "error";
     $resp["msg"] = $t->getMessage();
+    $resp['validation'] = nl2br(ob_get_contents());
+    ob_end_clean();
 }
 
 echo json_encode($resp);
