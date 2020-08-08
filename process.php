@@ -64,7 +64,7 @@ function rrmdir($dir)
 function ZipDir($source, $destination)
 {
     if (!extension_loaded('zip') || !file_exists($source)) {
-        return false;
+        Throw new Exception("php-zip not available");
     }
 
     $zip = new ZipArchive();
